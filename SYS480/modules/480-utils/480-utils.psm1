@@ -367,3 +367,31 @@ function 480setNetwork()
         480setNetwork  # Call the 480setNetwork function to allow the user to try again
     }
 }
+
+function 480setWinIP()
+{
+    # Prompt the user for username and password
+    $username = Read-Host "Enter your username"
+    $password = Read-Host "Enter your password" -AsSecureString
+
+    # Prompt the user to select a VM
+    $vmName = Read-Host "Enter the name of the VM you would like to set the IP for"
+
+    # Prompt the user to enter the IP address, netmask, gateway, and name server
+    $ipAddress = Read-Host "Enter the IP address"
+    $netmask = Read-Host "Enter the netmask"
+    $gateway = Read-Host "Enter the gateway"
+    $nameServer = Read-Host "Enter the name server"
+    $adapter = Read-Host "Enter the adapter name"
+     
+    # Create a script block with the code to set the IP address, netmask, and gateway
+    $scriptText = @'
+    netsh interface ip set address #adapter static #ipAddress #netmask #gateway
+    netsh interface ipv4 add dnsserver #adapter #nameServer index=1
+    netsh interface ipv4 add dnsserver #adapter #gateway index=2
+'@
+
+    # Invoke the script block on the VM using Invoke-VMScript
+    $scriptText = $scriptText.Replace('#adapter',$adapter).Replace('#ipAddress',$ipAddress).Replace('#netmask',$netmask).Replace('#gateway',$gateway).Replace('#nameServer',$nameServer)
+    Invoke-VMScript -VM $vmName -ScriptText $scriptText -GuestUser $username -GuestPassword $password -ScriptType PowerShell
+}
