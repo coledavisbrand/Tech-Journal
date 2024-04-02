@@ -1,0 +1,81 @@
+- name: windows domain config
+  hosts: servers
+  vars_prompt:
+    - name: admin_password
+      prompt: "Enter the password for local Administrators"
+      private: yes
+
+    - name: safe_mode_password
+      prompt: "Enter the safe mode password"
+      private: yes
+
+  tasks:
+    - name: Set local Administrators password
+      win_user:
+        name: Administrator
+        password: "{{ admin_password }}"
+
+    - name: Change hostname
+      win_hostname:
+        name: "{{ hostname }}"
+
+    - name: Reboot windows
+      win_reboot:
+        post_reboot_delay: 10
+
+    - name: Install AD Feature
+      win_feature:
+        name: AD-Domain-Services
+        include_management_tools: yes
+    
+    - name: Create Forest
+      win_domain:
+        dns_domain_name: "{{ domain }}"
+        safe_mode_password: "{{ safe_mode_password }}"
+        install_dns: yes
+      register: domain_install
+
+    - name: Reboot windows
+      win_reboot:
+        post_reboot_delay: 10
+
+    - name: Install latest nuget
+      win_shell: install-packageprovider -name nuget -force
+
+    - name: Install AD PS Module
+      win_psmodule:
+        name: ActiveDirectoryDSC
+        state: present
+        accept_license: yes
+
+    - name: Create Accounts OU
+      win_dsc:
+        resource_name: ADOrganizationalUnit
+        name: "Accounts-BLUE"
+        path: "DC=blue,DC=local"
+
+    - name: Create Groups within Accounts OU
+      win_dsc:
+        resource_name: ADOrganizationalUnit
+        name: "Groups"
+        path: "OU=Accounts-BLUE,DC=blue,DC=local"
+
+    - name: Create Computers OU
+      win_dsc:
+        resource_name: ADOrganizationalUnit
+        name: "Computers-BLUE"
+        path: "DC=blue,DC=local"
+
+    - name: Create Servers within Computers OU
+      win_dsc:
+        resource_name: ADOrganizationalUnit
+        name: "Servers"
+        path: "OU=Computers-BLUE,DC=blue,DC=local"
+
+    - name: Create Workstations within Computers OU
+      win_dsc:
+        resource_name: ADOrganizationalUnit
+        name: "Workstations"
+        path: "OU=Computers-BLUE,DC=blue,DC=local"
+
+        

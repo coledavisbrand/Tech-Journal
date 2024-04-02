@@ -1,0 +1,12 @@
+windows:
+  hosts:
+  children:
+    servers:
+      hosts:
+        10.0.5.5:
+          hostname: dc-blue
+          domain: blue.local
+
+  vars:
+    ansible_shell_type: powershell
+    ansible_user: Administrator
